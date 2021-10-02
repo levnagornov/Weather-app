@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+      integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T"
+      crossorigin="anonymous"
+    />
+    <title>Weather app</title>
+</head>
+<body>
+  <div class="container mt-5 p-4 col-4 bg-light text-dark border input-group mb-3">
+    <h3 class="p-1">Weather app. Weekly forecast</h3>
+      {% with messages = get_flashed_messages() %}
+        {% if messages %}
+          {% for message in messages %}
+            {% if "Ошибка." in message %}
+              <div class="alert alert-danger" role="alert">
+            {% else %}
+              <div class="alert alert-success" role="alert">
+            {% endif %}
+                <p>{{ message }}</p>
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+    
+      <form action="{{ url_for("render_index") }}" method="POST" enctype=multipart/form-data>
+        {{ form.csrf_token }}
+        {{ form.file(class_="custom-form-control")}}
+        <hr>
+        {{ form.submit(class_="btn btn-success") }}
+
+        {% if session['EXCEL_FILE_RECIEVED'] %}
+          <a href="{{ url_for('create_report') }}" class="btn btn-primary">Создать прогноз</a>
+        {% else %}
+          <a href="{{ url_for('create_report') }}" class="btn btn-light" disabled='disabled'>Создать прогноз</a>
+        {% endif %}
+        
+        {% if session['FORECAST_READY'] %}
+          <a href="{{ url_for('download_report') }}" class="btn btn-success">Скачать прогноз</a>
+        {% else %}  
+          <a href="{{ url_for('download_report') }}" class="btn btn-light" disabled='disabled'>Скачать прогноз</a> 
+        {% endif %}
+      </form>
+    
+  </div>
+</body>
+</html>

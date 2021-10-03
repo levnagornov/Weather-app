@@ -95,4 +95,4 @@ def allowed_xl_file(filename):
     ALLOWED_EXTENSIONS = {'xls', 'xlsx', 'xlsm', 'xlsb'}
 
     return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+           filename.split('.')[1].lower() in ALLOWED_EXTENSIONS

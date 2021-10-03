@@ -7,5 +7,4 @@ class FileForm(FlaskForm):
     """Form for getting a file"""
 
     file = FileField(validators=[FileRequired()])
-    submit = SubmitField("Загрузить файл")
-    download = SubmitField("Скачать файл")
+    submit = SubmitField("Загрузить Excel файл")

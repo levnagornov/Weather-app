@@ -11,8 +11,10 @@
     <title>Weather app</title>
 </head>
 <body>
-  <div class="container mt-5 p-4 col-4 bg-light text-dark border input-group mb-3">
-    <h3 class="p-1">Weather app. Weekly forecast</h3>
+  <div class="container mt-5 p-4 col-3 bg-light text-dark border mb-3">
+  <div class="p-3 text-center">
+    <h3>Weather app. Weekly forecast</h3>
+  </div>
       {% with messages = get_flashed_messages() %}
         {% if messages %}
           {% for message in messages %}
@@ -27,25 +29,24 @@
         {% endif %}
       {% endwith %}
     
-      <form action="{{ url_for("render_index") }}" method="POST" enctype=multipart/form-data>
+    
+      <form class="" action="{{ url_for("render_index") }}" method="POST" enctype=multipart/form-data>
         {{ form.csrf_token }}
+        <div class="row d-flex px-3">
         {{ form.file(class_="custom-form-control")}}
+        </div>
         <hr>
-        {{ form.submit(class_="btn btn-success") }}
 
+        <div class="d-flex justify-content-between">
         {% if session['EXCEL_FILE_RECIEVED'] %}
-          <a href="{{ url_for('create_report') }}" class="btn btn-primary">Создать прогноз</a>
+          {{ form.submit(class_="btn btn-outline-primary") }}
+          <a href="{{ url_for('create_report') }}" class="btn btn-success">Получить прогноз</a >
         {% else %}
-          <a href="{{ url_for('create_report') }}" class="btn btn-light" disabled='disabled'>Создать прогноз</a>
+          {{ form.submit(class_="btn btn-primary") }}
+          <a href="{{ url_for('create_report') }}" class="btn btn-outline-secondary" disabled='disabled'>Получить прогноз</a>
         {% endif %}
-        
-        {% if session['FORECAST_READY'] %}
-          <a href="{{ url_for('download_report') }}" class="btn btn-success">Скачать прогноз</a>
-        {% else %}  
-          <a href="{{ url_for('download_report') }}" class="btn btn-light" disabled='disabled'>Скачать прогноз</a> 
-        {% endif %}
+        </div>
       </form>
     
-  </div>
 </body>
 </html>

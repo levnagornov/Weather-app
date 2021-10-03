@@ -1,4 +1,3 @@
-import os
 import datetime as dt
 
 import requests
@@ -27,6 +26,7 @@ class OpenWeatherApi:
             "lang": self.lang,
         }
         response = requests.get(api_url, params=params)
+
         if response.ok:
             response = response.json()
 
@@ -58,14 +58,11 @@ def get_weekly_forecast_from_xl(path_xl_file):
         lang="ru",
     )
 
-    # excel_file_path = os.path.realpath('1.xlsx')
-    # is_xl_exist = os.path.isfile(excel_file_path)
-    # if not is_xl_exist:
-    #     print("Excel file not found.")
-    #     exit()
-
     workbook = pandas.read_excel(path_xl_file)
-    cities = workbook['Город']
+    cities = workbook.get("Город")
+    if cities is None:
+        return None
+
     data = [("Город", "Дата", "Минимальная температура"),]
     for city in cities:
         city_coordinates = weather.get_city_coordinates(city)
@@ -83,13 +80,11 @@ def get_weekly_forecast_from_xl(path_xl_file):
                 data.append((city, forecast_date, day_min_temp))
         else:
             data.append((city, "Город не найден", "Город не найден"))
-        break
 
     resulted_forecast = pandas.DataFrame(data[1:], columns = data[0])
     now = dt.datetime.now().strftime("%d.%m.%Y_%H-%M-%S")
     file_name = "result_" + str(now) + ".xlsx"
     session['report_name'] = file_name
-    session['FORECAST_READY'] = True
     session['FORECAST_READY'] = True
     resulted_forecast.to_excel(file_name, index=False)
     

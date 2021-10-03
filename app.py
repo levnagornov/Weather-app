@@ -1,6 +1,6 @@
 import os
 
-from flask import Flask, render_template, send_file, redirect, url_for, request, flash, session, abort
+from flask import Flask, render_template, send_file, redirect, url_for, request, flash, session, abort, after_this_request, make_response
 from flask_wtf.csrf import CSRFProtect
 
 from werkzeug.utils import secure_filename
@@ -31,29 +31,21 @@ def render_index():
     form = FileForm()
 
     if request.method == "POST" and form.validate_on_submit():
-        print("Файл получен")
         user_file = form.file.data
-        filename = secure_filename(user_file.filename)
-        session['inputed_xl_file_name'] = filename
-        print(user_file, filename)
-        
-        if filename == '':
-            flash('No selected file')
-            print("Файл пустой.")
+        user_file_name = secure_filename(user_file.filename)
+        session['inputed_xl_file_name'] = user_file_name
+
+        if user_file_name == '':
+            flash('Ошибка. No selected file')
             return redirect(url_for('render_index'))
 
-        if not allowed_xl_file(filename):
-            flash('Недопустимый формат файла.\nДопустимые форматы: xls, xlsx, xlsm, xlsb.')
-            print("Неверный формат файла")
+        if not allowed_xl_file(user_file_name):
+            flash('Ошибка. Недопустимый формат файла.\nДопустимые форматы: xls, xlsx, xlsm, xlsb.')
             return redirect(url_for('render_index'))            
 
-        print("Сохранение файла")
-        user_file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        print("Файл сохранен")
-
+        user_file.save(os.path.join(app.config['UPLOAD_FOLDER'], user_file_name))
         session['EXCEL_FILE_RECIEVED'] = True
-        flash("Файл успешно загружен. Можно запускать прогноз.")
-        
+        flash("Файл успешно загружен. Можно получить прогноз.")
         return redirect(url_for('render_index'))
 
     return render_template("index.html", form=form, session=session)
@@ -61,41 +53,49 @@ def render_index():
 
 @app.route('/create_report')
 def create_report():
-    if session['EXCEL_FILE_RECIEVED'] and not session['FORECAST_STARTED']:
-        
-        #do()
-        users_filename = os.path.join(app.config['UPLOAD_FOLDER'], session['inputed_xl_file_name'])
-        get_weekly_forecast_from_xl(users_filename)
-        flash("Прогноз получен и готов к скачиванию.")
-        return redirect(url_for('render_index'))
-        
-    elif session['EXCEL_FILE_RECIEVED'] and session['FORECAST_STARTED']:
-        flash("Прогноз уже запущен, ожидайте...")
-        return redirect(url_for('render_index'))
+    excel_file_recieved = session.get('EXCEL_FILE_RECIEVED')
+    forecast_started = session.get('FORECAST_STARTED')
+    if excel_file_recieved and not forecast_started:
+        session['FORECAST_STARTED'] = True
+        users_filename = os.path.join(
+            app.config['UPLOAD_FOLDER'], 
+            session['inputed_xl_file_name']
+        )
 
-    elif not session['EXCEL_FILE_RECIEVED']:
-        flash("Сначала нужно загрузить excel файл с городами.")
-        return redirect(url_for('render_index'))
-
-
-@app.route('/download_report')
-def download_report():
-    if session['FORECAST_READY']:
         try:
-            file_name = os.path.join(app.config['UPLOAD_FOLDER'], session['report_name'])
-            print(file_name)
-            return send_file(file_name)
+            get_weekly_forecast_from_xl(users_filename)
+        except Exception as error:
+            flash(error)
+            return redirect(url_for('render_index'))
+
+        if not session.get('report_name'):
+            session.clear()
+            flash("Ошибка. Неправильный Excel файл. Должен быть единственный лист, где в ячейке А1 указана шапка \"Город\", в ячейках А2 и ниже указаны сами города.")
+            return redirect(url_for('render_index'))
+
+        forecast_file_name = os.path.join(
+                app.config['UPLOAD_FOLDER'], 
+                session['report_name']
+            )
+        session.clear()
+        try:
+            return send_file(forecast_file_name)
+
         except FileNotFoundError:
             abort(404)
-
-    elif session['EXCEL_FILE_RECIEVED'] and session['FORECAST_STARTED'] and not session['FORECAST_READY']:
-        flash("Еще не готов.")
+        
+    elif excel_file_recieved and forecast_started:
+        flash("Прогноз собирается, ожидайте...")
         return redirect(url_for('render_index'))
 
-    elif not session['FORECAST_STARTED']:
-        flash("Сначала запустите прогноз.")
+    elif not excel_file_recieved:
+        flash("Ошибка. Сначала нужно загрузить excel файл с городами.")
         return redirect(url_for('render_index'))
 
+
+@app.route('/clear_session')
+def clear_session():
+    session.clear()
     return redirect(url_for('render_index'))
 
 
